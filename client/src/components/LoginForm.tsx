@@ -1,23 +1,43 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { useMutation } from '@apollo/client';
-import { LOGIN_USER } from '../utils/mutations';
-import Auth from '../utils/auth';
+import { LOGIN_USER } from '../utils/mutations.js';
+import Auth from '../utils/auth.js';
 
+// Define interfaces for type safety
 interface LoginFormProps {
   handleModalClose: () => void;
 }
 
+interface UserFormData {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  login: {
+    token: string;
+    user: {
+      _id: string;
+      username: string;
+      email: string;
+    };
+  };
+}
+
 const LoginForm: React.FC<LoginFormProps> = ({ handleModalClose }) => {
-  const [userFormData, setUserFormData] = useState({ email: '', password: '' });
+  const [userFormData, setUserFormData] = useState<UserFormData>({
+    email: '',
+    password: '',
+  });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  const [login] = useMutation(LOGIN_USER);
+  const [login] = useMutation<LoginResponse>(LOGIN_USER);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setUserFormData({ ...userFormData, [name]: value });
+    setUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -28,8 +48,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ handleModalClose }) => {
         variables: { ...userFormData }
       });
 
-      Auth.login(data.login.token);
-      handleModalClose(); // Close modal on successful login
+      if (data?.login?.token) {
+        Auth.login(data.login.token);
+        handleModalClose();
+      }
     } catch (err) {
       console.error(err);
       setShowAlert(true);

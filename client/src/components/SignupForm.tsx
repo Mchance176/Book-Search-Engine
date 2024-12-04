@@ -1,23 +1,44 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { useMutation } from '@apollo/client';
-import { ADD_USER } from '../utils/mutations';
-import Auth from '../utils/auth';
+import { ADD_USER } from '../utils/mutations.js';
+import Auth from '../utils/auth.js';
 
 interface SignUpFormProps {
   handleModalClose: () => void;
 }
 
+interface UserFormData {
+  username: string;
+  email: string;
+  password: string;
+}
+
+interface AddUserResponse {
+  addUser: {
+    token: string;
+    user: {
+      _id: string;
+      username: string;
+      email: string;
+    };
+  };
+}
+
 const SignUpForm: React.FC<SignUpFormProps> = ({ handleModalClose }) => {
-  const [userFormData, setUserFormData] = useState({ username: '', email: '', password: '' });
+  const [userFormData, setUserFormData] = useState<UserFormData>({
+    username: '',
+    email: '',
+    password: '',
+  });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  const [addUser] = useMutation(ADD_USER);
+  const [addUser] = useMutation<AddUserResponse>(ADD_USER);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setUserFormData({ ...userFormData, [name]: value });
+    setUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -28,8 +49,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ handleModalClose }) => {
         variables: { ...userFormData }
       });
 
-      Auth.login(data.addUser.token);
-      handleModalClose();
+      if (data?.addUser?.token) {
+        Auth.login(data.addUser.token);
+        handleModalClose();
+      }
     } catch (err) {
       console.error(err);
       setShowAlert(true);
@@ -92,7 +115,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ handleModalClose }) => {
         <Button
           disabled={!(userFormData.username && userFormData.email && userFormData.password)}
           type='submit'
-          variant='success'>
+          variant='success'
+        >
           Submit
         </Button>
       </Form>
