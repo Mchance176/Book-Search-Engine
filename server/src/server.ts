@@ -4,7 +4,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { typeDefs, resolvers } from './schemas/index.js';
 import db from './config/connection.js';
-import { authMiddleware } from './utils/auth.js';
+import { authMiddleware } from './services/auth.js';
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -13,7 +13,6 @@ const server = new ApolloServer({
   resolvers,
 });
 
-// Create a new instance of Apollo server
 const startApolloServer = async () => {
   await server.start();
 
@@ -21,7 +20,10 @@ const startApolloServer = async () => {
   app.use(express.json());
 
   app.use('/graphql', expressMiddleware(server, {
-    context: authMiddleware
+    context: async ({ req }) => {
+      // Call authMiddleware and return its result
+      return authMiddleware({ req });
+    }
   }));
 
   if (process.env.NODE_ENV === 'production') {

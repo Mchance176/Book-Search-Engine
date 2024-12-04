@@ -1,43 +1,48 @@
-import jwt from 'jsonwebtoken';
-import { Request } from 'express';
-import dotenv from 'dotenv';
-
+import * as dotenv from 'dotenv';
 dotenv.config();
+import jwt from 'jsonwebtoken';
+import { GraphQLError } from 'graphql';
+import { Request } from 'express';
+import { Types } from 'mongoose';
 
-// Define interfaces for better type safety
-interface JwtPayload {
-  _id: unknown;
+interface TokenUser {
   username: string;
   email: string;
+  _id: Types.ObjectId | string;
 }
 
-interface AuthContext {
-  user?: JwtPayload | null;
-}
+const secret = process.env.JWT_SECRET || 'mysecretsshhhhh';
+const expiration = '2h';
 
-// Get secret key from environment variables
-const secretKey = process.env.JWT_SECRET_KEY || 'fallback_secret_key';
+export const authMiddleware = async ({ req }: { req: Request }) => {
+  let token = req.body.token || req.query.token || req.headers.authorization;
 
-// Updated for GraphQL context
-export const authMiddleware = async ({ req }: { req: Request }): Promise<AuthContext> => {
-  // Get token from headers
-  const authHeader = req.headers.authorization;
+  if (req.headers.authorization) {
+    token = token.split(' ').pop().trim();
+  }
 
-  if (!authHeader) {
-    return { user: null };
+  if (!token) {
+    return req;
   }
 
   try {
-    const token = authHeader.split(' ')[1];
-    const user = jwt.verify(token, secretKey) as JwtPayload;
-    return { user };
-  } catch (err) {
-    console.error('Invalid token:', err);
-    return { user: null };
+    const { data } = jwt.verify(token, secret) as { data: TokenUser };
+    req.user = data;
+  } catch {
+    console.log('Invalid token');
+    throw new GraphQLError('Invalid token', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
   }
+
+  return req;
 };
 
-export const signToken = (username: string, email: string, _id: unknown): string => {
-  const payload: JwtPayload = { username, email, _id };
-  return jwt.sign(payload, secretKey, { expiresIn: '1h' });
+export const signToken = (user: TokenUser) => {
+  const payload = { 
+    username: user.username, 
+    email: user.email, 
+    _id: user._id.toString() 
+  };
+  return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
 };

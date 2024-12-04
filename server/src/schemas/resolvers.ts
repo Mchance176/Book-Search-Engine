@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import { signToken } from '../services/auth.js';
 import { GraphQLError } from 'graphql';
+import { Types } from 'mongoose';
 
 // Interfaces for better type safety
 interface Context {
@@ -35,6 +36,14 @@ interface LoginInput {
   password: string;
 }
 
+interface UserDocument {
+  _id: Types.ObjectId;
+  username: string;
+  email: string;
+  password: string;
+  isCorrectPassword(password: string): Promise<boolean>;
+}
+
 const resolvers = {
   Query: {
     me: async (_: unknown, __: unknown, context: Context) => {
@@ -53,13 +62,17 @@ const resolvers = {
 
   Mutation: {
     addUser: async (_: unknown, { username, email, password }: UserInput) => {
-      const user = await User.create({ username, email, password });
-      const token = signToken(user.username, user.email, user._id);
+      const user = await User.create({ username, email, password }) as UserDocument;
+      const token = signToken({ 
+        username: user.username, 
+        email: user.email, 
+        _id: user._id 
+      });
       return { token, user };
     },
 
     login: async (_: unknown, { email, password }: LoginInput) => {
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }) as UserDocument;
       if (!user) {
         throw new GraphQLError('User not found');
       }
@@ -69,7 +82,11 @@ const resolvers = {
         throw new GraphQLError('Incorrect credentials');
       }
 
-      const token = signToken(user.username, user.email, user._id);
+      const token = signToken({ 
+        username: user.username, 
+        email: user.email, 
+        _id: user._id 
+      });
       return { token, user };
     },
 
