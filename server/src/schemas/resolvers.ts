@@ -1,19 +1,50 @@
-import { AuthenticationError } from '@apollo/server';
-import { User } from '../models';
-import { signToken } from '../services/auth';
-import type { Context } from '../types/context';  // We'll create this type
+import User from '../models/User.js';
+import { signToken } from '../services/auth.js';
+import { GraphQLError } from 'graphql';
+
+// Interfaces for better type safety
+interface Context {
+  user?: {
+    _id: string;
+    username: string;
+    email: string;
+  } | null;
+}
+
+interface Book {
+  bookId: string;
+  authors?: string[];
+  description?: string;
+  title: string;
+  image?: string;
+  link?: string;
+}
+
+interface BookInput {
+  bookData: Book;
+}
+
+interface UserInput {
+  username: string;
+  email: string;
+  password: string;
+}
+
+interface LoginInput {
+  email: string;
+  password: string;
+}
 
 const resolvers = {
   Query: {
-    // Get the logged in user
-    me: async (_: any, __: any, context: Context) => {
+    me: async (_: unknown, __: unknown, context: Context) => {
       if (!context.user) {
-        throw new AuthenticationError('Not logged in');
+        throw new GraphQLError('Not authenticated');
       }
       
       const user = await User.findOne({ _id: context.user._id });
       if (!user) {
-        throw new AuthenticationError('User not found');
+        throw new GraphQLError('User not found');
       }
       
       return user;
@@ -21,33 +52,30 @@ const resolvers = {
   },
 
   Mutation: {
-    // Create new user
-    addUser: async (_: any, { username, email, password }: { username: string; email: string; password: string }) => {
+    addUser: async (_: unknown, { username, email, password }: UserInput) => {
       const user = await User.create({ username, email, password });
       const token = signToken(user.username, user.email, user._id);
       return { token, user };
     },
 
-    // Login user
-    login: async (_: any, { email, password }: { email: string; password: string }) => {
+    login: async (_: unknown, { email, password }: LoginInput) => {
       const user = await User.findOne({ email });
       if (!user) {
-        throw new AuthenticationError('User not found');
+        throw new GraphQLError('User not found');
       }
 
       const correctPw = await user.isCorrectPassword(password);
       if (!correctPw) {
-        throw new AuthenticationError('Incorrect credentials');
+        throw new GraphQLError('Incorrect credentials');
       }
 
       const token = signToken(user.username, user.email, user._id);
       return { token, user };
     },
 
-    // Save book to user's list
-    saveBook: async (_: any, { bookData }: any, context: Context) => {
+    saveBook: async (_: unknown, { bookData }: BookInput, context: Context) => {
       if (!context.user) {
-        throw new AuthenticationError('You need to be logged in!');
+        throw new GraphQLError('Not authenticated');
       }
 
       try {
@@ -56,16 +84,20 @@ const resolvers = {
           { $addToSet: { savedBooks: bookData } },
           { new: true, runValidators: true }
         );
+        
+        if (!updatedUser) {
+          throw new GraphQLError('User not found');
+        }
+        
         return updatedUser;
       } catch (err) {
-        throw new Error('Error saving book');
+        throw new GraphQLError('Error saving book');
       }
     },
 
-    // Remove book from user's list
-    removeBook: async (_: any, { bookId }: { bookId: string }, context: Context) => {
+    removeBook: async (_: unknown, { bookId }: { bookId: string }, context: Context) => {
       if (!context.user) {
-        throw new AuthenticationError('You need to be logged in!');
+        throw new GraphQLError('Not authenticated');
       }
 
       const updatedUser = await User.findOneAndUpdate(
@@ -75,7 +107,7 @@ const resolvers = {
       );
 
       if (!updatedUser) {
-        throw new Error('User not found');
+        throw new GraphQLError('User not found');
       }
 
       return updatedUser;

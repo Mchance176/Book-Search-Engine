@@ -2,10 +2,10 @@ import express from 'express';
 import path from 'node:path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
-import { typeDefs, resolvers } from './schemas';
-import db from './config/connection';
-import { authMiddleware } from './services/auth';
-
+import typeDefs from './schemas/typeDefs.js';
+import resolvers from './schemas/resolvers.js';
+import db from './config/connection.js';
+import { authMiddleware } from './services/auth.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 3001;
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  // Include this if you want to show GraphQL Playground in production
   introspection: true,
 });
 
@@ -33,7 +32,7 @@ const startApolloServer = async () => {
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../../client/dist')));
 
-    app.get('*', (req, res) => {
+    app.get('*', (_, res) => {
       res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
     });
   }

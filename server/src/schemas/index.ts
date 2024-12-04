@@ -1,5 +1,4 @@
-import typeDefs from './typeDefs';
-import resolvers from './resolvers';
+import typeDefs from './typeDefs.js';
+import resolvers from './resolvers.js';
 
-// Export both for use in Apollo Server setup
 export { typeDefs, resolvers };

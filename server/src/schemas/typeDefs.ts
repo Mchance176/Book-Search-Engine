@@ -1,7 +1,4 @@
-import { gql } from '@apollo/server';
-
-const typeDefs = gql`
-  # Book type matches your existing Book model
+const typeDefs = `#graphql
   type Book {
     bookId: String!
     authors: [String]
@@ -11,7 +8,6 @@ const typeDefs = gql`
     link: String
   }
 
-  # User type matches your existing User model
   type User {
     _id: ID!
     username: String!
@@ -20,13 +16,11 @@ const typeDefs = gql`
     savedBooks: [Book]
   }
 
-  # Auth type for login/signup responses
   type Auth {
     token: ID!
     user: User
   }
 
-  # Input type for book data when saving
   input BookInput {
     bookId: String!
     authors: [String]
@@ -36,12 +30,10 @@ const typeDefs = gql`
     link: String
   }
 
-  # Queries (GET requests)
   type Query {
     me: User
   }
 
-  # Mutations (POST/PUT/DELETE requests)
   type Mutation {
     login(email: String!, password: String!): Auth
     addUser(username: String!, email: String!, password: String!): Auth
