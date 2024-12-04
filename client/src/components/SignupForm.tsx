@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
 import { useMutation } from '@apollo/client';
-import { ADD_USER } from '../utils/mutations';  // Change this line
+import { ADD_USER } from '../utils/mutations';
 import Auth from '../utils/auth';
 
 interface SignUpFormProps {
@@ -13,17 +13,22 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ handleModalClose }) => {
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  const [addUser] = useMutation(ADD_USER);  // Change this line
+  const [addUser] = useMutation(ADD_USER);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setUserFormData({ ...userFormData, [name]: value });
+  };
 
   const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
-      const { data } = await addUser({  // Change this line
+      const { data } = await addUser({
         variables: { ...userFormData }
       });
 
-      Auth.login(data.addUser.token);  // Change this line
+      Auth.login(data.addUser.token);
       handleModalClose();
     } catch (err) {
       console.error(err);
