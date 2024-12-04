@@ -4,7 +4,11 @@ import { useMutation } from '@apollo/client';
 import { LOGIN_USER } from '../utils/mutations';
 import Auth from '../utils/auth';
 
-const LoginForm = () => {
+interface LoginFormProps {
+  handleModalClose: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ handleModalClose }) => {
   const [userFormData, setUserFormData] = useState({ email: '', password: '' });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -25,6 +29,7 @@ const LoginForm = () => {
       });
 
       Auth.login(data.login.token);
+      handleModalClose(); // Close modal on successful login
     } catch (err) {
       console.error(err);
       setShowAlert(true);

@@ -5,15 +5,33 @@ import { REMOVE_BOOK } from '../utils/mutations';
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
 
+// Define interfaces for type safety
+interface Book {
+  bookId: string;
+  authors?: string[];
+  description: string;
+  title: string;
+  image?: string;
+  link?: string;
+}
+
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  savedBooks: Book[];
+}
+
+interface MeData {
+  me: User;
+}
+
 const SavedBooks = () => {
-  // Use useQuery hook to execute GET_ME query on load
-  const { loading, data } = useQuery(GET_ME);
+  const { loading, data } = useQuery<MeData>(GET_ME);
   const [removeBook] = useMutation(REMOVE_BOOK);
 
-  // Get user data or set to empty object if not loaded
-  const userData = data?.me || {};
+  const userData = data?.me || {} as User;
 
-  // Function to handle deleting a book
   const handleDeleteBook = async (bookId: string) => {
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
@@ -24,38 +42,37 @@ const SavedBooks = () => {
     try {
       await removeBook({
         variables: { bookId },
-        // Update cache after deletion
-        update: cache => {
-          const { me } = cache.readQuery({ query: GET_ME }) || {};
-          if (me) {
+        update: (cache) => {
+          const existingData = cache.readQuery<MeData>({ query: GET_ME });
+          if (existingData?.me) {
             cache.writeQuery({
               query: GET_ME,
               data: {
                 me: {
-                  ...me,
-                  savedBooks: me.savedBooks.filter((book: any) => book.bookId !== bookId)
-                }
-              }
+                  ...existingData.me,
+                  savedBooks: existingData.me.savedBooks.filter(
+                    (book) => book.bookId !== bookId
+                  ),
+                },
+              },
             });
           }
-        }
+        },
       });
 
-      // Remove book's ID from localStorage
       removeBookId(bookId);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // If data is still loading, show loading message
   if (loading) {
     return <h2>LOADING...</h2>;
   }
 
   return (
     <>
-      <div fluid="true" className="text-light bg-dark p-5">
+      <div className="text-light bg-dark p-5">
         <Container>
           <h1>Viewing saved books!</h1>
         </Container>
@@ -63,30 +80,36 @@ const SavedBooks = () => {
       <Container>
         <h2 className='pt-5'>
           {userData.savedBooks?.length
-            ? `Viewing ${userData.savedBooks.length} saved ${userData.savedBooks.length === 1 ? 'book' : 'books'}:`
+            ? `Viewing ${userData.savedBooks.length} saved ${
+                userData.savedBooks.length === 1 ? 'book' : 'books'
+              }:`
             : 'You have no saved books!'}
         </h2>
         <Row>
-          {userData.savedBooks?.map((book: any) => {
-            return (
-              <Col md="4" key={book.bookId}>
-                <Card border='dark'>
-                  {book.image && <Card.Img src={book.image} alt={`The cover for ${book.title}`} variant='top' />}
-                  <Card.Body>
-                    <Card.Title>{book.title}</Card.Title>
-                    <p className='small'>Authors: {book.authors?.join(', ')}</p>
-                    <Card.Text>{book.description}</Card.Text>
-                    <Button 
-                      className='btn-block btn-danger' 
-                      onClick={() => handleDeleteBook(book.bookId)}
-                    >
-                      Delete this Book!
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            );
-          })}
+          {userData.savedBooks?.map((book: Book) => (
+            <Col md={4} key={book.bookId}>
+              <Card border='dark'>
+                {book.image && (
+                  <Card.Img
+                    src={book.image}
+                    alt={`The cover for ${book.title}`}
+                    variant='top'
+                  />
+                )}
+                <Card.Body>
+                  <Card.Title>{book.title}</Card.Title>
+                  <p className='small'>Authors: {book.authors?.join(', ')}</p>
+                  <Card.Text>{book.description}</Card.Text>
+                  <Button
+                    className='btn-block btn-danger'
+                    onClick={() => handleDeleteBook(book.bookId)}
+                  >
+                    Delete this Book!
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
         </Row>
       </Container>
     </>
