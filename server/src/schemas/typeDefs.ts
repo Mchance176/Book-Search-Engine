@@ -1,6 +1,5 @@
-import { gql } from 'apollo-server-express';
+import { gql } from '@apollo/server';
 
-// Define GraphQL schema using gql tag
 const typeDefs = gql`
   # Book type matches your existing Book model
   type Book {
@@ -21,7 +20,7 @@ const typeDefs = gql`
     savedBooks: [Book]
   }
 
-  # Auth type for returning login/signup data
+  # Auth type for login/signup responses
   type Auth {
     token: ID!
     user: User
@@ -51,4 +50,4 @@ const typeDefs = gql`
   }
 `;
 
-export default typeDefs; 
+export default typeDefs;
