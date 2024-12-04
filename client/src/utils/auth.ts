@@ -1,43 +1,38 @@
-import jwt from 'jsonwebtoken';
-import { Request } from 'express';
-import dotenv from 'dotenv';
+import decode from 'jwt-decode';
 
-dotenv.config();
-
-// Ensure JWT_SECRET is available
-const secret = process.env.JWT_SECRET;
-if (!secret) {
-  throw new Error('JWT_SECRET must be defined in environment variables');
-}
-
-interface JwtPayload {
-  _id: unknown;
-  username: string;
-  email: string;
-}
-
-interface AuthContext {
-  user?: JwtPayload | null;
-}
-
-export const authMiddleware = async ({ req }: { req: Request }): Promise<AuthContext> => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    return { user: null };
+class AuthService {
+  getProfile() {
+    const token = this.getToken();
+    return token ? decode(token) : null;
   }
 
-  try {
-    const token = authHeader.split(' ')[1];
-    const user = jwt.verify(token, secret) as JwtPayload;
-    return { user };
-  } catch (err) {
-    console.error('Invalid token:', err);
-    return { user: null };
+  loggedIn() {
+    const token = this.getToken();
+    return !!token && !this.isTokenExpired(token);
   }
-};
 
-export const signToken = (username: string, email: string, _id: unknown): string => {
-  const payload: JwtPayload = { username, email, _id };
-  return jwt.sign(payload, secret, { expiresIn: '2h' });
-};
+  isTokenExpired(token: string) {
+    try {
+      const decoded: any = decode(token);
+      return decoded.exp < Date.now() / 1000;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  getToken() {
+    return localStorage.getItem('id_token');
+  }
+
+  login(idToken: string) {
+    localStorage.setItem('id_token', idToken);
+    window.location.assign('/');
+  }
+
+  logout() {
+    localStorage.removeItem('id_token');
+    window.location.assign('/');
+  }
+}
+
+export default new AuthService();
