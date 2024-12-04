@@ -1,39 +1,34 @@
 import express from 'express';
-import path from 'node:path';
+import path from 'path';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
-import typeDefs from './schemas/typeDefs.js';
-import resolvers from './schemas/resolvers.js';
+import { typeDefs, resolvers } from './schemas/index.js';
 import db from './config/connection.js';
-import { authMiddleware } from './services/auth.js';
-const app = express();
-const PORT = process.env.PORT || 3001;
+import { authMiddleware } from './utils/auth.js';
 
-// Create new Apollo server
+const PORT = process.env.PORT || 3001;
+const app = express();
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  introspection: true,
 });
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-// Create a function to start the Apollo server
+// Create a new instance of Apollo server
 const startApolloServer = async () => {
   await server.start();
-  
-  // Apply Apollo Server middleware to Express with auth
+
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
+
   app.use('/graphql', expressMiddleware(server, {
     context: authMiddleware
   }));
 
-  // Serve static assets in production
   if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../../client/dist')));
+    app.use(express.static(path.join(process.cwd(), '../client/dist')));
 
-    app.get('*', (_, res) => {
-      res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(process.cwd(), '../client/dist/index.html'));
     });
   }
 
@@ -45,5 +40,4 @@ const startApolloServer = async () => {
   });
 };
 
-// Start the server
-startApolloServer().catch(err => console.error('Error starting server:', err));
+startApolloServer();
