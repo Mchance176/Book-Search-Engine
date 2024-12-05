@@ -76,8 +76,8 @@ npm run develop
 - Vite
 
 ## Screenshots
-[Add screenshots of your application here]
-
+[Add /Users/matthewchance/bootcamp/Copy challenge/02-Challenge 18/Assets/Screenshot 2024-12-05 at 10.25.57 AM (2).pngscreenshots of your application here]
+/Users/matthewchance/bootcamp/Copy challenge/02-Challenge 18/Assets/Screenshot 2024-12-05 at 10.26.16 AM (2).png
 ## Contributing
 1. Fork the repository
 2. Create a new branch
