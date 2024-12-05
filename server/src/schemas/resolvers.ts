@@ -62,7 +62,7 @@ const resolvers = {
 
   Mutation: {
     addUser: async (_: unknown, { username, email, password }: UserInput) => {
-      const user = await User.create({ username, email, password }) as UserDocument;
+      const user = await User.create({ username, email, password });
       const token = signToken({ 
         username: user.username, 
         email: user.email, 
@@ -70,18 +70,18 @@ const resolvers = {
       });
       return { token, user };
     },
-
+  
     login: async (_: unknown, { email, password }: LoginInput) => {
-      const user = await User.findOne({ email }) as UserDocument;
+      const user = await User.findOne({ email });
       if (!user) {
         throw new GraphQLError('User not found');
       }
-
+  
       const correctPw = await user.isCorrectPassword(password);
       if (!correctPw) {
         throw new GraphQLError('Incorrect credentials');
       }
-
+  
       const token = signToken({ 
         username: user.username, 
         email: user.email, 
@@ -89,6 +89,7 @@ const resolvers = {
       });
       return { token, user };
     },
+  },
 
     saveBook: async (_: unknown, { bookData }: BookInput, context: Context) => {
       if (!context.user) {
